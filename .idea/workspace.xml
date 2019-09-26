@@ -51,6 +51,7 @@
   <component name="ProjectId" id="1RNHT69ZOuIISiLDWHUuHG5mw4d" />
   <component name="PropertiesComponent">
     <property name="DefaultGoTemplateProperty" value="Go File" />
+    <property name="GO_FMT" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="go.gopath.indexing.explicitly.defined" value="true" />
     <property name="go.import.settings.migrated" value="true" />
@@ -107,8 +108,16 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1569500637813</updated>
-      <workItem from="1569500640725" duration="45000" />
+      <workItem from="1569500640725" duration="86000" />
     </task>
+    <task id="LOCAL-00001" summary="1.delete some thing">
+      <created>1569500705735</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1569500705735</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -124,6 +133,10 @@
         </entry>
       </map>
     </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="1.delete some thing" />
+    <option name="LAST_COMMIT_MESSAGE" value="1.delete some thing" />
   </component>
   <component name="VgoProject">
     <integration-enabled>true</integration-enabled>
