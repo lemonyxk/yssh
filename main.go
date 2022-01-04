@@ -18,13 +18,13 @@ func main() {
 	home, err := os.UserHomeDir()
 	file, err := os.OpenFile(home+"/.yssh/config.json", os.O_RDONLY, 0666)
 	if err != nil {
-		println(err.Error())
+		println("config:", err.Error())
 		return
 	}
 
 	jsonString, err := ioutil.ReadAll(file)
 	if err != nil {
-		println(err.Error())
+		println("config:", err.Error())
 		return
 	}
 
@@ -32,7 +32,7 @@ func main() {
 
 	err = json.Unmarshal(jsonString, &configs)
 	if err != nil {
-		println(err.Error())
+		println("config:", err.Error())
 		return
 	}
 
@@ -125,7 +125,7 @@ func main() {
 
 	err = session.Run("$SHELL")
 	if err != nil {
-		println(err.Error())
+		println("exit:", err.Error())
 	}
 
 	// fmt.Println("Exit", config.Name, config.Host, "success")
