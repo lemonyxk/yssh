@@ -3,31 +3,28 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"golang.org/x/crypto/ssh"
-	"golang.org/x/crypto/ssh/terminal"
 	"io/ioutil"
-	"log"
 	"net"
 	"os"
 	"time"
-)
 
-func init() {
-	log.SetFlags(log.Llongfile | log.Ldate | log.Ltime)
-}
+	"github.com/lemoyxk/console"
+	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/terminal"
+)
 
 func main() {
 
 	home, err := os.UserHomeDir()
 	file, err := os.OpenFile(home+"/.yssh/config.json", os.O_RDONLY, 0666)
 	if err != nil {
-		log.Println(err)
+		println(err.Error())
 		return
 	}
 
 	jsonString, err := ioutil.ReadAll(file)
 	if err != nil {
-		log.Println(err)
+		println(err.Error())
 		return
 	}
 
@@ -35,30 +32,35 @@ func main() {
 
 	err = json.Unmarshal(jsonString, &configs)
 	if err != nil {
-		log.Println(err)
+		println(err.Error())
 		return
 	}
 
+	var table = console.NewTable()
+	table.Header("INDEX", "NAME", "HOST")
+
 	for k, v := range configs {
-		fmt.Println(k+1, v.Name, v.Host)
+		table.Row(k+1, v.Name, v.Host)
 	}
+
+	console.FgGreen.Println(table.Render())
 
 	var config ServerConfig
 
 	for {
 
-		fmt.Println("Please select server number :")
+		print("Please select server index: ")
 
 		var number int
 
-		if _, err := fmt.Scanf("%d", &number); err != nil {
-			// log.Println(err)
-			break
+		if _, err := fmt.Scan(&number); err != nil {
+			println("input:", err.Error())
+			continue
 		}
 
-		for number < 1 || number > len(configs) {
-			fmt.Println(number, "is invalid")
-			return
+		if number < 1 || number > len(configs) {
+			println("input:", number, "is invalid")
+			continue
 		}
 
 		config = configs[number-1]
@@ -69,14 +71,15 @@ func main() {
 
 	session, err := connect(config.User, config.Password, config.Host, config.Port)
 	if err != nil {
-		log.Fatal(err)
+		println("connect:", err.Error())
+		return
 	}
 	defer session.Close()
 
 	fd := int(os.Stdin.Fd())
 	oldState, err := terminal.MakeRaw(fd)
 	if err != nil {
-		log.Println(err)
+		println("terminal:", err)
 		return
 	}
 	defer terminal.Restore(fd, oldState)
@@ -87,7 +90,7 @@ func main() {
 
 	termWidth, termHeight, err := terminal.GetSize(fd)
 	if err != nil {
-		log.Println(err)
+		println("terminal:", err.Error())
 		return
 	}
 
@@ -100,18 +103,32 @@ func main() {
 
 	// Request pseudo terminal
 	if err := session.RequestPty("xterm-256color", termHeight, termWidth, modes); err != nil {
-		log.Println(err)
+		println("terminal:", err.Error())
 		return
 	}
 
-	fmt.Println("Connect to", config.Name, config.Host, "success")
+	// fmt.Println("Connect to", config.Name, config.Host, "success\n")
+
+	var ticker = time.NewTicker(time.Second * 60)
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				_, err := session.SendRequest(config.User, false, nil)
+				if err != nil {
+					println("ping:", err.Error())
+					os.Exit(0)
+				}
+			}
+		}
+	}()
 
 	err = session.Run("$SHELL")
 	if err != nil {
-		log.Println(err)
+		println(err.Error())
 	}
 
-	fmt.Println("Exit", config.Name, config.Host, "success")
+	// fmt.Println("Exit", config.Name, config.Host, "success")
 }
 
 func connect(user, password, host string, port int) (*ssh.Session, error) {

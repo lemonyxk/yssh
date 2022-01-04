@@ -1,7 +1,7 @@
 [{
-  "name": "中心服务器",
+  "name": "test",
   "user": "lemo",
-  "host": "47.75.152.229",
+  "host": "1.1.1.1",
   "port": 22,
-  "password": "1354243"
+  "password": "111111"
 }]
