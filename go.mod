@@ -1,4 +1,4 @@
-module yssh
+module github.com/lemoyxk/yssh
 
 go 1.17
 
