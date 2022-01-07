@@ -1,11 +1,11 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
-	"net"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/lemoyxk/console"
@@ -13,18 +13,23 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
+const SSGTimeout = 3 * time.Second
+const SSHRetryTimes = 20
+const SSHPingInterval = 30 * time.Second
+const SSHProgress = 100 * time.Millisecond
+
 func main() {
 
 	home, err := os.UserHomeDir()
 	file, err := os.OpenFile(home+"/.yssh/config.json", os.O_RDONLY, 0666)
 	if err != nil {
-		println("config:", err.Error())
+		console.FgRed.Println("config:", err.Error())
 		return
 	}
 
 	jsonString, err := ioutil.ReadAll(file)
 	if err != nil {
-		println("config:", err.Error())
+		console.FgRed.Println("config:", err.Error())
 		return
 	}
 
@@ -32,7 +37,7 @@ func main() {
 
 	err = json.Unmarshal(jsonString, &configs)
 	if err != nil {
-		println("config:", err.Error())
+		console.FgRed.Println("config:", err.Error())
 		return
 	}
 
@@ -43,23 +48,27 @@ func main() {
 		table.Row(k+1, v.Name, v.Host)
 	}
 
-	console.FgGreen.Println(table.Render())
+	console.FgYellow.Println(table.Render())
 
 	var config ServerConfig
 
 	for {
 
-		print("Please select server index: ")
+		console.FgCyan.Printf("Please select server index: ")
 
 		var number int
 
-		if _, err := fmt.Scan(&number); err != nil {
-			println("input:", err.Error())
+		scanner := bufio.NewScanner(os.Stdin)
+		scanner.Scan()
+		var text = scanner.Text()
+		number, err = strconv.Atoi(text)
+		if err != nil {
+			console.FgRed.Println("input:", text, "is not a number")
 			continue
 		}
 
 		if number < 1 || number > len(configs) {
-			println("input:", number, "is invalid")
+			console.FgRed.Println("input:", number, "is overflow index")
 			continue
 		}
 
@@ -69,28 +78,56 @@ func main() {
 
 	}
 
-	session, err := connect(config.User, config.Password, config.Host, config.Port)
-	if err != nil {
-		println("connect:", err.Error())
-		return
-	}
-	defer session.Close()
+	var session *ssh.Session
 
-	fd := int(os.Stdin.Fd())
-	oldState, err := terminal.MakeRaw(fd)
-	if err != nil {
-		println("terminal:", err)
-		return
+	var now = time.Now()
+	var timeoutTicker = time.NewTicker(SSHProgress)
+	go func() {
+		for {
+			select {
+			case <-timeoutTicker.C:
+				console.FgGreen.Printf(
+					"\rStart connecting to %s %s %.1fs",
+					config.Name, config.Host,
+					float64(time.Now().Sub(now).Milliseconds())/1000,
+				)
+			}
+		}
+	}()
+
+	var sshRetryTimes = 0
+
+	for {
+		session, err = connect(config.User, config.Password, config.Host, config.Port)
+		if err != nil {
+			sshRetryTimes++
+			if sshRetryTimes == SSHRetryTimes {
+				console.FgRed.Println("\nconnect:", err.Error())
+				return
+			}
+			continue
+		}
+		timeoutTicker.Stop()
+		break
 	}
-	defer terminal.Restore(fd, oldState)
+
+	defer session.Close()
 
 	session.Stdout = os.Stdout
 	session.Stderr = os.Stderr
 	session.Stdin = os.Stdin
 
+	fd := int(os.Stdin.Fd())
+	oldState, err := terminal.MakeRaw(fd)
+	if err != nil {
+		console.FgRed.Println("terminal:", err)
+		return
+	}
+	defer terminal.Restore(fd, oldState)
+
 	termWidth, termHeight, err := terminal.GetSize(fd)
 	if err != nil {
-		println("terminal:", err.Error())
+		console.FgRed.Println("terminal:", err.Error())
 		return
 	}
 
@@ -103,69 +140,27 @@ func main() {
 
 	// Request pseudo terminal
 	if err := session.RequestPty("xterm-256color", termHeight, termWidth, modes); err != nil {
-		println("terminal:", err.Error())
+		console.FgRed.Println("terminal:", err.Error())
 		return
 	}
 
-	// fmt.Println("Connect to", config.Name, config.Host, "success\n")
+	console.FgGreen.Println("\r\nConnect to", config.Name, config.Host, "success\r")
 
-	var ticker = time.NewTicker(time.Second * 60)
+	var ticker = time.NewTicker(SSHPingInterval)
 	go func() {
 		for {
 			select {
 			case <-ticker.C:
 				_, err := session.SendRequest(config.User, false, nil)
 				if err != nil {
-					println("ping:", err.Error())
+					console.FgRed.Println("ping:", err.Error())
 					os.Exit(0)
 				}
 			}
 		}
 	}()
 
-	err = session.Run("$SHELL")
-	if err != nil {
-		println("exit:", err.Error())
-	}
+	_ = session.Run("$SHELL")
 
-	// fmt.Println("Exit", config.Name, config.Host, "success")
-}
-
-func connect(user, password, host string, port int) (*ssh.Session, error) {
-	var (
-		auth         []ssh.AuthMethod
-		addr         string
-		clientConfig *ssh.ClientConfig
-		client       *ssh.Client
-		session      *ssh.Session
-		err          error
-	)
-
-	// get auth method
-	auth = make([]ssh.AuthMethod, 0)
-	auth = append(auth, ssh.Password(password))
-
-	clientConfig = &ssh.ClientConfig{
-		User:    user,
-		Auth:    auth,
-		Timeout: 30 * time.Second,
-		// 需要验证服务端
-		HostKeyCallback: func(hostname string, remote net.Addr, key ssh.PublicKey) error {
-			return nil
-		},
-	}
-
-	// connect to ssh
-	addr = fmt.Sprintf("%s:%d", host, port)
-
-	if client, err = ssh.Dial("tcp", addr, clientConfig); err != nil {
-		return nil, err
-	}
-
-	// create session
-	if session, err = client.NewSession(); err != nil {
-		return nil, err
-	}
-
-	return session, nil
+	// println("Exit", config.Name, config.Host, "success\r")
 }
