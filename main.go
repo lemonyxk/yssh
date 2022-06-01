@@ -10,7 +10,7 @@ import (
 
 	"github.com/lemoyxk/console"
 	"golang.org/x/crypto/ssh"
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 )
 
 const SSGTimeout = 3 * time.Second
@@ -118,14 +118,14 @@ func main() {
 	session.Stdin = os.Stdin
 
 	fd := int(os.Stdin.Fd())
-	oldState, err := terminal.MakeRaw(fd)
+	oldState, err := term.MakeRaw(fd)
 	if err != nil {
 		console.FgRed.Println("terminal:", err)
 		return
 	}
-	defer terminal.Restore(fd, oldState)
+	defer term.Restore(fd, oldState)
 
-	termWidth, termHeight, err := terminal.GetSize(fd)
+	termWidth, termHeight, err := term.GetSize(fd)
 	if err != nil {
 		console.FgRed.Println("terminal:", err.Error())
 		return
