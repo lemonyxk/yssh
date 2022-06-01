@@ -1,9 +1,10 @@
-module github.com/lemoyxk/yssh
+module github.com/lemonyxk/yssh
 
 go 1.17
 
 require (
 	github.com/lemoyxk/console v0.0.0-20211114041123-e7bf1b8e0f15
+	github.com/olekukonko/ts v0.0.0-20171002115256-78ecb04241c0
 	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3
 	golang.org/x/term v0.0.0-20220526004731-065cf7ba2467
 )
