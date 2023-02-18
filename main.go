@@ -3,7 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"os"
 	"strconv"
 	"time"
@@ -21,6 +21,14 @@ const SSHProgress = 100 * time.Millisecond
 
 func main() {
 
+	var index = -1
+
+	if len(os.Args) == 1 {
+		index = 0
+	} else {
+		index, _ = strconv.Atoi(os.Args[1])
+	}
+
 	home, err := os.UserHomeDir()
 	file, err := os.OpenFile(home+"/.yssh/config.json", os.O_RDONLY, 0666)
 	if err != nil {
@@ -28,19 +36,31 @@ func main() {
 		return
 	}
 
-	jsonString, err := ioutil.ReadAll(file)
+	jsonString, err := io.ReadAll(file)
 	if err != nil {
 		console.FgRed.Println("config:", err.Error())
 		return
 	}
 
-	var configs ServerConfigList
+	var configList ServerConfigList
 
-	err = json.Unmarshal(jsonString, &configs)
+	err = json.Unmarshal(jsonString, &configList)
 	if err != nil {
 		console.FgRed.Println("config:", err.Error())
 		return
 	}
+
+	if len(configList) == 0 {
+		console.FgRed.Println("config: no config")
+		return
+	}
+
+	if index > len(configList)-1 {
+		console.FgRed.Println("config: index overflow")
+		return
+	}
+
+	var configs = configList[index]
 
 	var table = console.NewTable()
 	table.Header("INDEX", "NAME", "HOST")
@@ -112,7 +132,7 @@ func main() {
 		break
 	}
 
-	defer session.Close()
+	defer func() { _ = session.Close() }()
 
 	session.Stdout = os.Stdout
 	session.Stderr = os.Stderr
@@ -124,15 +144,15 @@ func main() {
 		console.FgRed.Println("\nterminal: make raw", err)
 		return
 	}
-	defer term.Restore(fd, oldState)
+	defer func() { _ = term.Restore(fd, oldState) }()
 
-	sezi, err := ts.GetSize()
+	size, err := ts.GetSize()
 	if err != nil {
 		console.FgRed.Println("\nterminal: get size", err.Error())
 		return
 	}
 
-	termWidth, termHeight := sezi.Col(), sezi.Row()
+	termWidth, termHeight := size.Col(), size.Row()
 
 	// Set up terminal modes
 	modes := ssh.TerminalModes{

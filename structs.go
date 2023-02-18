@@ -1,6 +1,6 @@
 package main
 
-type ServerConfigList []ServerConfig
+type ServerConfigList [][]ServerConfig
 
 type ServerConfig struct {
 	Name     string `json:"name"`
