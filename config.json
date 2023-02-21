@@ -1,7 +1,11 @@
-[{
-  "name": "test",
-  "user": "lemo",
-  "host": "1.1.1.1",
-  "port": 22,
-  "password": "111111"
-}]
+[
+  [
+    {
+      "name": "test",
+      "user": "lemo",
+      "host": "1.1.1.1",
+      "port": 22,
+      "password": "111111"
+    }
+  ]
+]

@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/lemoyxk/console"
+	"github.com/lemonyxk/console"
 	"github.com/olekukonko/ts"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/term"
@@ -33,6 +33,19 @@ func main() {
 	file, err := os.OpenFile(home+"/.yssh/config.json", os.O_RDONLY, 0666)
 	if err != nil {
 		console.FgRed.Println("config:", err.Error())
+		console.FgRed.Println("config: please create config file at ~/.yssh/config.json")
+		console.FgRed.Println("config: example:")
+		println(`[
+  [
+    {
+      "name": "test",
+      "user": "lemo",
+      "host": "1.1.1.1",
+      "port": 22,
+      "password": "111111"
+    }
+  ]
+]`)
 		return
 	}
 
