@@ -82,11 +82,10 @@ func main() {
 		table.Row(k+1, v.Name, v.Host)
 	}
 
-	console.FgYellow.Println(table.Render())
-
 	var config ServerConfig
 
 	for {
+		console.FgYellow.Println(table.Render())
 
 		console.FgCyan.Printf("Please select server index: ")
 
@@ -108,14 +107,20 @@ func main() {
 
 		config = configs[number-1]
 
-		break
-
+		do(config)
 	}
 
+	// println("Exit", config.Name, config.Host, "success\r")
+}
+
+func do(config ServerConfig) {
+
 	var session *ssh.Session
+	var err error
 
 	var now = time.Now()
 	var timeoutTicker = time.NewTicker(SSHProgress)
+	var stopTimeoutTicker = make(chan struct{})
 	go func() {
 		for {
 			select {
@@ -125,6 +130,8 @@ func main() {
 					config.Name, config.Host,
 					float64(time.Now().Sub(now).Milliseconds())/1000,
 				)
+			case <-stopTimeoutTicker:
+				return
 			}
 		}
 	}()
@@ -142,6 +149,7 @@ func main() {
 			continue
 		}
 		timeoutTicker.Stop()
+		stopTimeoutTicker <- struct{}{}
 		break
 	}
 
@@ -182,21 +190,24 @@ func main() {
 
 	console.FgGreen.Println("\r\nConnect to", config.Name, config.Host, "success\r")
 
-	var ticker = time.NewTicker(SSHPingInterval)
+	var pingTimeoutTicker = time.NewTicker(SSHPingInterval)
+	var stopPingTimeoutTicker = make(chan struct{})
 	go func() {
 		for {
 			select {
-			case <-ticker.C:
+			case <-pingTimeoutTicker.C:
 				_, err := session.SendRequest(config.User, false, nil)
 				if err != nil {
 					console.FgRed.Println("ping:", err.Error())
-					os.Exit(0)
+					_ = session.Close()
+					return
 				}
+			case <-stopPingTimeoutTicker:
+				return
 			}
 		}
 	}()
 
 	_ = session.Run("$SHELL")
-
-	// println("Exit", config.Name, config.Host, "success\r")
+	stopPingTimeoutTicker <- struct{}{}
 }

@@ -6,7 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="932c2653-72d9-4391-b574-ca9ee4d7945c" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -114,7 +114,8 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="1." />
     <MESSAGE value="1.support for windows." />
-    <option name="LAST_COMMIT_MESSAGE" value="1.support for windows." />
+    <MESSAGE value="1.update lib." />
+    <option name="LAST_COMMIT_MESSAGE" value="1.update lib." />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
