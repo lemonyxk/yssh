@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/lemonyxk/console v0.0.0-20220915082229-0d08cc2aadf8
 	github.com/olekukonko/ts v0.0.0-20171002115256-78ecb04241c0
-	golang.org/x/crypto v0.0.0-20200302210943-78000ba7a073
+	golang.org/x/crypto v0.0.0-20220314234659-1baeb1ce4c0b
 	golang.org/x/term v0.5.0
 )
 
