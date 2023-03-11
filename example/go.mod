@@ -19,5 +19,5 @@ require (
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	go.mongodb.org/mongo-driver v1.7.3 // indirect
-	golang.org/x/sys v0.0.0-20211110154304-99a53858aa08 // indirect
+	golang.org/x/sys v0.1.0 // indirect
 )
