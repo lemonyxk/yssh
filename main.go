@@ -2,7 +2,9 @@ package main
 
 import (
 	"bufio"
+	_ "embed"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"strconv"
@@ -13,6 +15,9 @@ import (
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/term"
 )
+
+//go:embed config.json
+var tmp []byte
 
 const SSGTimeout = 3 * time.Second
 const SSHRetryTimes = 20
@@ -35,17 +40,7 @@ func main() {
 		console.FgRed.Println("config:", err.Error())
 		console.FgRed.Println("config: please create config file at ~/.yssh/config.json")
 		console.FgRed.Println("config: example:")
-		println(`[
-  [
-    {
-      "name": "test",
-      "user": "lemo",
-      "host": "1.1.1.1",
-      "port": 22,
-      "password": "111111"
-    }
-  ]
-]`)
+		println(string(tmp))
 		return
 	}
 
@@ -87,27 +82,34 @@ func main() {
 	for {
 		console.FgYellow.Println(table.Render())
 
-		console.FgCyan.Printf("Please select server index: ")
-
 		var number int
 
-		scanner := bufio.NewScanner(os.Stdin)
-		scanner.Scan()
-		var text = scanner.Text()
-		number, err = strconv.Atoi(text)
-		if err != nil {
-			console.FgRed.Println("input:", text, "is not a number")
-			continue
-		}
+		for {
 
-		if number < 1 || number > len(configs) {
-			console.FgRed.Println("input:", number, "is overflow index")
-			continue
+			console.FgCyan.Printf("Please select server index: ")
+
+			scanner := bufio.NewScanner(os.Stdin)
+			scanner.Scan()
+			var text = scanner.Text()
+			number, err = strconv.Atoi(text)
+			if err != nil {
+				console.FgRed.Println("input:", text, "is not a number")
+				continue
+			}
+
+			if number < 1 || number > len(configs) {
+				console.FgRed.Println("input:", number, "is overflow index")
+				continue
+			}
+
+			break
 		}
 
 		config = configs[number-1]
 
 		do(config)
+
+		break
 	}
 
 	// println("Exit", config.Name, config.Host, "success\r")
@@ -139,7 +141,13 @@ func do(config ServerConfig) {
 	var sshRetryTimes = 0
 
 	for {
-		session, err = connect(config.User, config.Password, config.Host, config.Port)
+		session, err = NewSession(Config{
+			UserName:   config.User,
+			Password:   config.Password,
+			Addr:       fmt.Sprintf("%s:%d", config.Host, config.Port),
+			PrivateKey: config.PrivateKey,
+			Timeout:    SSGTimeout,
+		})
 		if err != nil {
 			sshRetryTimes++
 			if sshRetryTimes == SSHRetryTimes {
@@ -148,6 +156,7 @@ func do(config ServerConfig) {
 			}
 			continue
 		}
+
 		timeoutTicker.Stop()
 		stopTimeoutTicker <- struct{}{}
 		break
@@ -209,5 +218,6 @@ func do(config ServerConfig) {
 	}()
 
 	_ = session.Run("$SHELL")
+
 	stopPingTimeoutTicker <- struct{}{}
 }
